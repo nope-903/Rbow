@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>레인보우 보드</title>
+<meta name="theme-color" content="#f7e3a1">
+<meta name="description" content="7가지 루틴 목표를 색으로 매일 기록하는 1년 습관 트래커">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="레인보우 보드">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fbf8f1;
+    --line:#e3ddcd;
+    --ink:#3a3630;
+    --sub:#9a8f78;
+    --amber:#f7e3a1;
+    --amber-line:#e8c96a;
+    --panel:#ffffff;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/22px 22px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/22px 22px,
+      var(--paper);
+    font-family:'Noto Sans KR', sans-serif;
+    color:var(--ink);
+    padding:20px 16px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:18px;flex-wrap:wrap;gap:10px;
+  }
+  h1{
+    font-family:'Gaegu', sans-serif;
+    font-size:38px;
+    margin:0;
+    letter-spacing:1px;
+    background:linear-gradient(90deg,#FF6B6B,#FFA94D,#FFD43B,#69DB7C,#4DABF7,#7048E8,#E64980);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .year-nav{display:flex;align-items:center;gap:10px;font-size:15px;}
+  .year-nav button{
+    border:1px solid var(--line);background:var(--panel);
+    border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:14px;
+    color:var(--ink);
+  }
+  .year-nav button:hover{background:var(--amber);}
+  .year-label{font-weight:700;font-size:17px;min-width:64px;text-align:center;}
+  .toolbar{display:flex;gap:8px;}
+  .toolbar button{
+    border:1px solid var(--line);background:var(--panel);
+    border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--ink);
+  }
+  .toolbar button:hover{background:var(--amber);}
+
+  .board{
+    display:flex;gap:16px;align-items:flex-start;
+  }
+  .grid-scroll{
+    flex:1;
+    overflow-x:auto;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--panel);
+  }
+  table{border-collapse:collapse;font-size:12px;}
+  th,td{border:1px solid var(--line);}
+  thead th{
+    background:var(--amber);
+    border-color:var(--amber-line);
+    font-family:'Gaegu',sans-serif;
+    font-size:15px;
+    padding:8px 4px;
+    position:sticky;top:0;z-index:2;
+    min-width:98px;
+  }
+  thead th.daycol-h{
+    position:sticky;left:0;top:0;z-index:3;
+    min-width:34px;background:var(--amber);
+  }
+  tbody th{
+    position:sticky;left:0;z-index:1;
+    background:var(--panel);
+    font-weight:500;color:var(--sub);
+    width:34px;text-align:center;
+  }
+  tbody th.today{color:#E64980;font-weight:700;}
+  td.day-cell{padding:0;height:22px;}
+  td.day-cell.disabled{background:repeating-linear-gradient(45deg,#f1ede1,#f1ede1 4px,#e7e1d0 4px,#e7e1d0 8px);}
+  .stripes{display:flex;height:22px;width:100%;}
+  .stripe{flex:1;cursor:pointer;height:100%;}
+  .stripe:hover{filter:brightness(0.9);}
+  td.day-cell.disabled .stripes{visibility:hidden;}
+
+  .tracker{
+    width:220px;
+    flex-shrink:0;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .tracker-h{
+    background:var(--amber);
+    font-family:'Gaegu',sans-serif;
+    font-size:17px;
+    padding:10px;
+    text-align:center;
+    border-bottom:1px solid var(--amber-line);
+  }
+  .goal-row{
+    display:flex;align-items:center;gap:8px;
+    padding:9px 10px;border-bottom:1px solid var(--line);
+  }
+  .goal-row:last-child{border-bottom:none;}
+  .swatch{
+    width:20px;height:20px;border-radius:5px;flex-shrink:0;cursor:pointer;
+    border:1px solid rgba(0,0,0,0.15);
+  }
+  .goal-name{
+    flex:1;border:none;background:transparent;font-size:14px;
+    font-family:'Noto Sans KR',sans-serif;color:var(--ink);outline:none;
+    min-width:0;
+  }
+  .goal-name:focus{border-bottom:1px solid var(--sub);}
+
+  .palette{
+    position:absolute;background:var(--panel);border:1px solid var(--line);
+    border-radius:8px;padding:8px;display:grid;grid-template-columns:repeat(5,20px);
+    gap:6px;box-shadow:0 6px 18px rgba(0,0,0,0.15);z-index:10;
+  }
+  .palette div{width:20px;height:20px;border-radius:5px;cursor:pointer;border:1px solid rgba(0,0,0,0.1);}
+
+  .hint{
+    margin-top:14px;font-size:12px;color:var(--sub);text-align:center;
+  }
+  @media (max-width:720px){
+    .board{flex-direction:column;}
+    .tracker{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>레인보우 보드</h1>
+    <div class="year-nav">
+      <button id="prevYear">‹</button>
+      <span class="year-label" id="yearLabel"></span>
+      <button id="nextYear">›</button>
+    </div>
+    <div class="toolbar">
+      <button id="resetYear">이 해 기록 초기화</button>
+    </div>
+  </header>
+
+  <div class="board">
+    <div class="grid-scroll">
+      <table id="grid"></table>
+    </div>
+    <div class="tracker">
+      <div class="tracker-h">TRACKER</div>
+      <div id="goalList"></div>
+    </div>
+  </div>
+  <div class="hint">칸의 색 줄을 클릭해서 그날의 목표 달성을 표시하세요 · 목표 이름과 색은 오른쪽 트래커에서 바꿀 수 있어요</div>
+</div>
+
+<script>
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const PALETTE = ['#FF6B6B','#FFA94D','#FFD43B','#69DB7C','#38D9A9','#4DABF7','#7048E8',
+                 '#E64980','#F783AC','#94D82D','#20C997','#339AF0','#5C7CFA','#CC5DE8'];
+const DEFAULT_GOALS = [
+  {name:'기상', color:'#FF6B6B'},
+  {name:'운동', color:'#FFA94D'},
+  {name:'물마시기', color:'#FFD43B'},
+  {name:'독서', color:'#69DB7C'},
+  {name:'청소', color:'#4DABF7'},
+  {name:'공부', color:'#7048E8'},
+  {name:'취침', color:'#E64980'},
+];
+
+let year = new Date().getFullYear();
+let goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
+let marks = {}; // key "m-d" -> bitmask (7 bits)
+
+function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
+function storeKey(){ return 'rainbow-board:' + year; }
+
+function load(){
+  try{
+    const raw = localStorage.getItem(storeKey());
+    if(raw){
+      const parsed = JSON.parse(raw);
+      goals = parsed.goals && parsed.goals.length === 7 ? parsed.goals : JSON.parse(JSON.stringify(DEFAULT_GOALS));
+      marks = parsed.marks || {};
+    } else {
+      goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
+      marks = {};
+    }
+  } catch(e){
+    goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
+    marks = {};
+  }
+  renderAll();
+}
+
+function save(){
+  try{
+    localStorage.setItem(storeKey(), JSON.stringify({goals, marks}));
+  } catch(e){
+    console.error('저장 실패', e);
+  }
+}
+
+function renderAll(){
+  document.getElementById('yearLabel').textContent = year + '년';
+  renderGoalList();
+  renderGrid();
+}
+
+function renderGoalList(){
+  const list = document.getElementById('goalList');
+  list.innerHTML = '';
+  goals.forEach((g, i) => {
+    const row = document.createElement('div');
+    row.className = 'goal-row';
+
+    const sw = document.createElement('div');
+    sw.className = 'swatch';
+    sw.style.background = g.color;
+    sw.addEventListener('click', (ev) => openPalette(ev, i));
+
+    const input = document.createElement('input');
+    input.className = 'goal-name';
+    input.value = g.name;
+    input.maxLength = 12;
+    input.addEventListener('change', () => { goals[i].name = input.value || ('목표'+(i+1)); save(); });
+
+    row.appendChild(sw);
+    row.appendChild(input);
+    list.appendChild(row);
+  });
+}
+
+function openPalette(ev, goalIndex){
+  closePalette();
+  const pop = document.createElement('div');
+  pop.className = 'palette';
+  const rect = ev.target.getBoundingClientRect();
+  pop.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+  pop.style.left = (window.scrollX + rect.left) + 'px';
+  PALETTE.forEach(c => {
+    const sw = document.createElement('div');
+    sw.style.background = c;
+    sw.addEventListener('click', () => {
+      goals[goalIndex].color = c;
+      save();
+      renderGoalList();
+      renderGrid();
+      closePalette();
+    });
+    pop.appendChild(sw);
+  });
+  pop.id = 'activePalette';
+  document.body.appendChild(pop);
+  setTimeout(() => document.addEventListener('click', closePaletteOnOutside), 0);
+}
+function closePalette(){
+  const p = document.getElementById('activePalette');
+  if(p) p.remove();
+  document.removeEventListener('click', closePaletteOnOutside);
+}
+function closePaletteOnOutside(e){
+  const p = document.getElementById('activePalette');
+  if(p && !p.contains(e.target)) closePalette();
+}
+
+function renderGrid(){
+  const table = document.getElementById('grid');
+  table.innerHTML = '';
+
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  const cornerTh = document.createElement('th');
+  cornerTh.className = 'daycol-h';
+  headRow.appendChild(cornerTh);
+  MONTHS.forEach(m => {
+    const th = document.createElement('th');
+    th.textContent = m;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  const today = new Date();
+  const isThisYear = today.getFullYear() === year;
+
+  for(let d = 1; d <= 31; d++){
+    const tr = document.createElement('tr');
+    const th = document.createElement('th');
+    th.textContent = d;
+    tr.appendChild(th);
+
+    for(let m = 0; m < 12; m++){
+      const dim = daysInMonth(year, m);
+      const td = document.createElement('td');
+      td.className = 'day-cell';
+      if(d > dim){
+        td.classList.add('disabled');
+        tr.appendChild(td);
+        continue;
+      }
+      if(isThisYear && today.getDate() === d && today.getMonth() === m){
+        th.classList.add('today');
+      }
+      const stripes = document.createElement('div');
+      stripes.className = 'stripes';
+      const mk = marks[m+'-'+d] || 0;
+      goals.forEach((g, gi) => {
+        const s = document.createElement('div');
+        s.className = 'stripe';
+        const on = (mk >> gi) & 1;
+        s.style.background = on ? g.color : 'transparent';
+        s.title = g.name;
+        s.addEventListener('click', () => toggleMark(m, d, gi));
+        stripes.appendChild(s);
+      });
+      td.appendChild(stripes);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+}
+
+function toggleMark(m, d, goalIndex){
+  const k = m+'-'+d;
+  const cur = marks[k] || 0;
+  const next = cur ^ (1 << goalIndex);
+  if(next === 0) delete marks[k];
+  else marks[k] = next;
+  save();
+  renderGrid();
+}
+
+document.getElementById('prevYear').addEventListener('click', () => { year--; load(); });
+document.getElementById('nextYear').addEventListener('click', () => { year++; load(); });
+document.getElementById('resetYear').addEventListener('click', () => {
+  if(confirm(year + '년의 모든 기록을 지울까요? 목표 이름과 색은 유지돼요.')){
+    marks = {};
+    save();
+    renderGrid();
+  }
+});
+
+load();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(e => console.log('SW 등록 실패', e));
+  });
+}
+</script>
+</body>
+</html>
